@@ -7,10 +7,3 @@ I started writing these because my system kept shutting down when the system was
 Each of these scripts are designed to apply the same setting to all cores, regardless of how many cores you have.  Additionally, they are designed to check for the appropriate options, so that improper options are not applied to the cpufreq system.
 
 These scripts are written for Python 3.5.
-
-governor: sets the current governor for all cores.
-max-frequency: sets the maximum frequency for all cores.
-
-Run the command by itself to show current settings.
-Run the command with a valid option to set it in the system.
-Run the command with an invalid option to show usage and available options.

@@ -1,0 +1,89 @@
+#!/usr/bin/python
+
+# This script is designed to check and set the maximum frequencies for all the cores on a system.
+# If you launch the command without a frequency option, it will show the frequencies currently set.
+# To check for available frequencies, simply type "help" as the commandline option.
+
+import sys
+import os
+import multiprocessing
+        
+# This contains the available frequencies that can be used as options.
+availableFrequencies = open("/sys/devices/system/cpu/cpufreq/policy0/scaling_available_frequencies", "r")
+frequencyOptionsList = availableFrequencies.read()
+frequencyOptions=frequencyOptionsList.split(" ")[:-1]
+match=0
+
+# This is the number of cores the CPU is capable of.
+cores = multiprocessing.cpu_count()
+  
+def rootCheck():
+    return os.access("/sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq", os.W_OK)
+
+def seeFrequency(core):
+    currentFrequencyFile = open("/sys/devices/system/cpu/cpufreq/policy" + str(core) + "/scaling_max_freq", "r")
+    currentFrequency = currentFrequencyFile.read()
+    currentFrequencyFile.close()
+    return currentFrequency[:-1]
+
+def setFrequency(core, frequency):
+    outputFile = open("/sys/devices/system/cpu/cpufreq/policy" + str(core) + "/scaling_max_freq", "w")
+    outputFile.write(frequency)
+    outputFile.close()
+
+def checkFrequency(core, frequency):
+    fileTest = open("/sys/devices/system/cpu/cpufreq/policy" + str(core) + "/scaling_max_freq", "r")
+    fileTesting = fileTest.read()
+    fileTest.close()
+    
+    if fileTesting.strip() == frequency:
+        return True
+    else:
+        return False
+    
+def availableFrequencies():
+    print("Available frequencies are:")
+    for i in range(0, len(frequencyOptions)):
+        print("* " + frequencyOptions[i])
+
+def currentFrequencies():
+    print("Currently-set frequency maximums are:")
+    for i in range(0, cores):
+        print("* Core " + str(i+1) + ": " + seeFrequency(i))
+
+def checkOptions(frequency):
+    for option in frequencyOptions:
+        if frequency == option:
+            return True
+    return False
+
+# Check to make sure the script is run as root.
+if rootCheck() == False:    
+    print("You need to be root.\n")
+    currentFrequencies()
+    sys.exit()
+
+# Check for a commandline argument.
+if len(sys.argv) == 1:
+    currentFrequencies()
+    sys.exit()
+
+# At this time, let's grab the actual frequency chosen.
+frequencyChoice = sys.argv[1]
+
+# Check to make sure the argument matches one of the available options.
+if not checkOptions(frequencyChoice):
+    print ("Usage: " + os.path.basename(sys.argv[0]) + " <frequency>\n")
+    availableFrequencies()
+    print("")
+    
+    sys.exit()
+
+# All other checks should have passed by this point.  Let's go ahead and set the frequencies.
+for i in range(0, cores):
+    print("Setting core " + str(i) + " to " + frequencyChoice + "... ", end='')
+    setFrequency(i, frequencyChoice)
+    if checkFrequency(i, frequencyChoice):
+        print("Success!")
+    else:
+        print("Failed!")

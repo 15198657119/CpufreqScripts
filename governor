@@ -1,0 +1,89 @@
+#!/usr/bin/python
+
+# This script is designed to check and set the governors for all the cores on a system.
+# If you launch the command without a governor option, it will show the governors currently set.
+# To check for available governors, simply type "help" as the commandline option.
+
+import sys
+import os
+import multiprocessing
+        
+# This contains the available governors that can be used as options.
+availableGovernors = open("/sys/devices/system/cpu/cpufreq/policy0/scaling_available_governors", "r")
+governorOptionsList = availableGovernors.read()
+governorOptions=governorOptionsList.split(" ")[:-1]
+match=0
+
+# This is the number of cores the CPU is capable of.
+cores = multiprocessing.cpu_count()
+  
+def rootCheck():
+    return os.access("/sys/devices/system/cpu/cpufreq/policy0/scaling_governor", os.W_OK)
+
+def seeGovernor(core):
+    currentGovernorFile = open("/sys/devices/system/cpu/cpufreq/policy" + str(core) + "/scaling_governor", "r")
+    currentGovernor = currentGovernorFile.read()
+    currentGovernorFile.close()
+    return currentGovernor[:-1]
+
+def setGovernor(core, governor):
+    outputFile = open("/sys/devices/system/cpu/cpufreq/policy" + str(core) + "/scaling_governor", "w")
+    outputFile.write(governor)
+    outputFile.close()
+
+def checkGovernor(core, governor):
+    fileTest = open("/sys/devices/system/cpu/cpufreq/policy" + str(core) + "/scaling_governor", "r")
+    fileTesting = fileTest.read()
+    fileTest.close()
+    
+    if fileTesting.strip() == governor:
+        return True
+    else:
+        return False
+    
+def availableGovernors():
+    print("Available governors are:")
+    for i in range(0, len(governorOptions)):
+        print("* " + governorOptions[i])
+
+def currentGovernors():
+    print("Currently-set governors are:")
+    for i in range(0, cores):
+        print("* Core " + str(i+1) + ": " + seeGovernor(i))
+
+def checkOptions(governor):
+    for option in governorOptions:
+        if governor == option:
+            return True
+    return False
+
+# Check to make sure the script is run as root.
+if rootCheck() == False:    
+    print("You need to be root.\n")
+    currentGovernors()
+    sys.exit()
+
+# Check for a commandline argument.
+if len(sys.argv) == 1:
+    currentGovernors()
+    sys.exit()
+
+# At this time, let's grab the actual governor chosen.
+governorChoice = sys.argv[1]
+
+# Check to make sure the argument matches one of the available options.
+if not checkOptions(governorChoice):
+    print ("Usage: " + os.path.basename(sys.argv[0]) + " <governor>\n")
+    availableGovernors()
+    print("")
+    
+    sys.exit()
+
+# All other checks should have passed by this point.  Let's go ahead and set the governors.
+for i in range(0, cores):
+    print("Setting core " + str(i) + " to " + governorChoice + "... ", end='')
+    setGovernor(i, governorChoice)
+    if checkGovernor(i, governorChoice):
+        print("Success!")
+    else:
+        print("Failed!")

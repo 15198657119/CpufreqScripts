@@ -1,0 +1,34 @@
+#!/usr/bin/python
+
+# This script is designed to show the current frequency and governor of each core in the system.
+
+import sys
+import os
+import multiprocessing
+import locale
+
+locale.setlocale(locale.LC_ALL, 'en_US')
+
+# This is the number of cores the CPU is capable of.
+cores = multiprocessing.cpu_count()
+
+def seeFrequency(core):
+    currentFrequencyFile = open("/sys/devices/system/cpu/cpufreq/policy" + str(core) + "/scaling_cur_freq", "r")
+    currentFrequency = currentFrequencyFile.read()
+    currentFrequencyFile.close()
+    currentFrequencyBefore = currentFrequency[:-1]
+    if int(currentFrequencyBefore) < 1000000:
+        currentFrequency = str(int(currentFrequencyBefore)/1000) + " MHz"
+    else:
+        currentFrequency = str(int(currentFrequencyBefore)/1000000) + " GHz"
+    return currentFrequency
+
+def seeGovernor(core):
+    currentGovernorFile = open("/sys/devices/system/cpu/cpufreq/policy" + str(core) + "/scaling_governor", "r")
+    currentGovernor = currentGovernorFile.read()
+    currentGovernorFile.close()
+    return currentGovernor[:-1]
+
+print("Current core speeds and governors:")
+for i in range(0, cores):
+    print("* Core " + str(i+1) + ": " + seeFrequency(i) + " (\""+ seeGovernor(i) +"\" governor)" )

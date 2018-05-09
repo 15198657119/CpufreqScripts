@@ -22,9 +22,14 @@ def rootCheck():
 
 def seeFrequency(core):
     currentFrequencyFile = open("/sys/devices/system/cpu/cpufreq/policy" + str(core) + "/scaling_max_freq", "r")
-    currentFrequency = currentFrequencyFile.read()
+    currentFrequencyRaw = currentFrequencyFile.read()
     currentFrequencyFile.close()
-    return currentFrequency[:-1]
+    currentFrequency = currentFrequencyRaw[:-1]
+    if int(currentFrequency) < 1000000:
+        currentFrequencyFormatted = str(int(currentFrequency)/1000) + " MHz"
+    else:
+        currentFrequencyFormatted = str(int(currentFrequency)/1000000) + " GHz"
+    return currentFrequency + " (" + currentFrequencyFormatted + ")"
 
 def setFrequency(core, frequency):
     outputFile = open("/sys/devices/system/cpu/cpufreq/policy" + str(core) + "/scaling_max_freq", "w")
@@ -44,7 +49,12 @@ def checkFrequency(core, frequency):
 def availableFrequencies():
     print("Available frequencies are:")
     for i in range(0, len(frequencyOptions)):
-        print("* " + frequencyOptions[i])
+        currentOption = frequencyOptions[i]
+        if int(currentOption) < 1000000:
+            currentOptionFormatted = str(int(currentOption)/1000) + " MHz"
+        else:
+            currentOptionFormatted = str(int(currentOption)/1000000) + " GHz"
+        print("* " + frequencyOptions[i] + " (" + currentOptionFormatted + ")")
 
 def currentFrequencies():
     print("Currently-set frequency maximums are:")
